@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KnowIt - Flashcards & Dashboard</title>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 30px 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app-layout {
+      display: flex;
+      flex-direction: row;
+      gap: 30px;
+      width: 100%;
+      max-width: 950px;
+      align-items: flex-start;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .column {
+      flex: 1 1 420px;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .container {
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      width: 100%;
+    }
+
+    h2 {
+      color: #333;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .premade-btn {
+      flex: 1;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      color: #ffffff;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: background 0.2s;
+    }
+
+    .premade-btn:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+    }
+
+    textarea, input[type="text"], input[type="email"], input[type="password"], input[type="url"] {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    textarea {
+      height: 100px;
+      resize: vertical;
+    }
+
+    button.primary-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #5471c0;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+
+    button.primary-btn:hover {
+      opacity: 0.9;
+    }
+
+    .save-quick-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-left: 5px solid #5471c0;
+      display: none;
+      word-break: break-word;
+      font-size: 14px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    #authSection, #dashboard {
+      width: 100%;
+    }
+
+    #dashboard {
+      display: none;
+    }
+
+    .password-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #888;
+      display: flex;
+      align-items: center;
+    }
+
+    .toggle-password svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .item-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .user-button {
+      background: #f0f2f5;
+      color: #333;
+      padding: 10px 14px;
+      flex-grow: 1;
+      text-decoration: none;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-button:hover {
+      background: #e4e6eb;
+    }
+
+    .del-btn {
+      color: #ff4d4d;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+      white-space: nowrap;
+    }
+
+    .toggle-section {
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      text-align: center;
+    }
+
+    .toggle-text {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .secondary-btn {
+      background-color: transparent;
+      color: #5471c0;
+      border: 1px solid #5471c0;
+      font-size: 14px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .logout-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: #888;
+      cursor: pointer;
+      font-size: 13px;
+      text-decoration: underline;
+    }
+
+    #authMsg, #dashMsg {
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    #authMsg { color: #d00; }
+    #dashMsg { color: #28a745; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- COLUMN 1: Flashcard Creator -->
+  <div class="column">
+    <div class="button-row">
+      <button type="button" class="premade-btn" onclick="fillText('APUSH Unit 5')">APUSH Unit 5</button>
+      <button type="button" class="premade-btn" onclick="fillText('APUSH Unit 4')">APUSH Unit 4</button>
+      <button type="button" class="premade-btn" onclick="fillText('Rhetorical Terms')">Rhetorical Terms</button>
+    </div>
+
+    <div class="container">
+      <h2>Create Flashcard Set</h2>
+
+      <form id="autoTagForm">
+        <textarea name="UserInput" id="userInput" placeholder="What would you like to learn today?&#10;e.g. make 4 flashcards for AP Chem unit 3" required></textarea>
+
+        <input type="hidden" name="Tag" id="hiddenTagField">
+        <input type="hidden" name="Front" id="frontField">
+        <input type="hidden" name="Back" id="backField">
+
+        <button type="submit" class="primary-btn">Make It</button>
+      </form>
+
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <!-- COLUMN 2: Account & Saved Sets -->
+  <div class="column">
+    <div class="container">
+      
+      <!-- AUTH SECTION -->
+      <div id="authSection">
+        <h2 id="formTitle">Sign In</h2>
+        <form id="authForm">
+          <input type="email" id="email" placeholder="Email Address" required>
+          <div class="password-container">
+            <input type="password" id="password" placeholder="Password" required>
+            <span class="toggle-password" id="toggleEye" title="Show/Hide Password">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </span>
+          </div>
+          <button type="submit" id="mainBtn" class="primary-btn">Sign In</button>
+          <p style="text-align:center; margin-top: 12px;">
+            <span id="forgotLink" style="color:#5471c0;font-size:12px;cursor:pointer;">Forgot Password?</span>
+          </p>
+          <p id="authMsg"></p>
+        </form>
+        <div class="toggle-section">
+          <div class="toggle-text" id="toggleText">Don't have an account?</div>
+          <button class="secondary-btn" id="toggleBtn" type="button">Create New Account</button>
+        </div>
+      </div>
+
+      <!-- DASHBOARD SECTION -->
+      <div id="dashboard">
+        <h2>Your Saved Sets</h2>
+        <input type="text" id="btnName" placeholder="Set Name (e.g., AP Chem)">
+        <input type="text" id="btnLink" placeholder="Set ID (e.g., ID-171...)">
+        <button id="addBtn" class="primary-btn" style="background-color:#28a745;">+ Add New Link</button>
+        <p id="dashMsg"></p>
+        <div id="buttonList"></div>
+        <span class="logout-link" id="logoutLink">Sign Out</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ========================
+   FIREBASE CONFIGURATION
+======================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCAELaO7re373qpUD59IN27g9BAWBCOgso",
+  authDomain: "knowit-buttons.firebaseapp.com",
+  databaseURL: "https://knowit-buttons-default-rtdb.firebaseio.com",
+  projectId: "knowit-buttons",
+  storageBucket: "knowit-buttons.firebasestorage.app",
+  messagingSenderId: "341087764922",
+  appId: "1:341087764922:web:2e9319c0ac009832909d83"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+/* ========================
+   FLASHCARD GENERATOR
+======================== */
+const form = document.getElementById('autoTagForm');
+const statusDiv = document.getElementById('status');
+const tagField = document.getElementById('hiddenTagField');
+const frontField = document.getElementById('frontField');
+const backField = document.getElementById('backField');
+const userInputEl = document.getElementById('userInput');
+
+const scriptURL = 'https://script.google.com/macros/s/AKfycbwr8lRVtHndqiIIvOf6C7F-NPwN7MYdGUZUBx3-0vn5soqEfnHYOi04lrtwQS48RE_Q/exec';
+
+function fillText(text) {
+  userInputEl.value = "Make flashcards about " + text;
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  statusDiv.style.display = "block";
+  statusDiv.innerHTML = "Creating your flashcards...";
+
+  const uniqueId = 'ID-' + Date.now();
+  tagField.value = uniqueId;
+  const resultLink = "https://shirhaim2009-blip.github.io/KnowIt-falshcards/?set=" + uniqueId;
+
+  try {
+    const formData = new FormData(form);
+    formData.set("action", "generateFlashcards");
+
+    const res = await fetch(scriptURL, {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      statusDiv.innerHTML = `✖ ${data.error || 'Something went wrong.'}`;
+      return;
+    }
+
+    const cards = Array.isArray(data.cards) ? data.cards : [];
+    if (cards.length > 0) {
+      frontField.value = cards[0].front || "";
+      backField.value = cards[0].back || "";
+    } else {
+      frontField.value = "";
+      backField.value = "";
+    }
+
+    statusDiv.innerHTML = `
+      ✔ Flashcards ready!<br><br>
+      <strong>Set ID:</strong> <code>${uniqueId}</code><br><br>
+      <a href="${resultLink}" target="_blank" rel="noopener noreferrer" style="color:#5471c0;font-weight:600;">Open Flashcards</a>
+      <br><br>
+      <button class="save-quick-btn" onclick="quickFillDashboard('${uniqueId}')">Copy ID to Dashboard</button>
+    `;
+
+    form.reset();
+    tagField.value = "";
+    frontField.value = "";
+    backField.value = "";
+  } catch (err) {
+    statusDiv.innerText = 'Error. Check connection.';
+    console.error(err);
+  }
+});
+
+function quickFillDashboard(id) {
+  const btnLink = document.getElementById("btnLink");
+  if (btnLink) {
+    btnLink.value = id;
+    btnLink.focus();
+  }
+}
+
+/* ========================
+   AUTH & DASHBOARD LOGIC
+======================== */
+let isLoginMode = true;
+const authMsg = document.getElementById("authMsg");
+const dashMsg = document.getElementById("dashMsg");
+
+// Toggle login/sign-up view
+document.getElementById("toggleBtn").addEventListener("click", () => {
+  isLoginMode = !isLoginMode;
+  document.getElementById("formTitle").innerText = isLoginMode ? "Sign In" : "Create Account";
+  document.getElementById("mainBtn").innerText = isLoginMode ? "Sign In" : "Create Account";
+  document.getElementById("toggleBtn").innerText = isLoginMode ? "Create New Account" : "Back to Sign In";
+  document.getElementById("toggleText").innerText = isLoginMode ? "Don't have an account?" : "Already have an account?";
+  document.getElementById("forgotLink").style.display = isLoginMode ? "inline" : "none";
+  authMsg.innerText = "";
+});
+
+// Toggle password visibility
+document.getElementById("toggleEye").addEventListener("click", () => {
+  const p = document.getElementById("password");
+  p.type = (p.type === "password") ? "text" : "password";
+});
+
+// Handle auth submissions
+document.getElementById("authForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  authMsg.innerText = "";
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  if (isLoginMode) {
+    auth.signInWithEmailAndPassword(email, password).catch(err => authMsg.innerText = err.message);
+  } else {
+    auth.createUserWithEmailAndPassword(email, password).catch(err => authMsg.innerText = err.message);
+  }
+});
+
+// Password reset
+document.getElementById("forgotLink").addEventListener("click", () => {
+  authMsg.innerText = "";
+  const email = document.getElementById("email").value;
+  if (!email) {
+    authMsg.innerText = "Enter your email first";
+    return;
+  }
+  auth.sendPasswordResetEmail(email)
+    .then(() => {
+      authMsg.style.color = "#28a745";
+      authMsg.innerText = "Reset email sent! Check your inbox.";
+    })
+    .catch(err => {
+      authMsg.style.color = "#d00";
+      authMsg.innerText = "Error: " + err.message;
+    });
+});
+
+// Sign out
+document.getElementById("logoutLink").addEventListener("click", () => auth.signOut());
+
+// Add link to Realtime Database
+document.getElementById("addBtn").addEventListener("click", () => {
+  dashMsg.innerText = "";
+  const name = document.getElementById("btnName").value.trim();
+  const rawLink = document.getElementById("btnLink").value.trim();
+  const url = "https://shirhaim2009-blip.github.io/KnowIt-falshcards/?set=" + encodeURIComponent(rawLink);
+
+  if (!name || !rawLink) {
+    dashMsg.style.color = "#d00";
+    dashMsg.innerText = "Enter both name and link/ID";
+    return;
+  }
+
+  db.ref("users/" + auth.currentUser.uid + "/buttons").push({ name: name, url: url })
+    .then(() => {
+      dashMsg.style.color = "#28a745";
+      dashMsg.innerText = "Link added!";
+      document.getElementById("btnName").value = "";
+      document.getElementById("btnLink").value = "";
+    })
+    .catch(err => {
+      dashMsg.style.color = "#d00";
+      dashMsg.innerText = "Error: " + err.message;
+    });
+});
+
+// Listen for auth state
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    loadButtons(user.uid);
+  } else {
+    document.getElementById("authSection").style.display = "block";
+    document.getElementById("dashboard").style.display = "none";
+  }
+});
+
+// Fetch links from Realtime Database
+function loadButtons(uid) {
+  db.ref("users/" + uid + "/buttons").on("value", snapshot => {
+    const list = document.getElementById("buttonList");
+    list.innerHTML = "";
+    snapshot.forEach(child => {
+      const data = child.val();
+      const row = document.createElement("div");
+      row.className = "item-row";
+
+      const link = document.createElement("a");
+      link.className = "user-button";
+      link.href = data.url;
+      link.target = "_blank";
+      link.textContent = data.name;
+
+      const del = document.createElement("span");
+      del.className = "del-btn";
+      del.textContent = "Delete";
+      del.addEventListener("click", () => {
+        db.ref("users/" + uid + "/buttons/" + child.key).remove();
+      });
+
+      row.appendChild(link);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  });
+}
+</script>
+</body>
+</html>
