@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KnowIt - Flashcards & Dashboard</title>
 
+  <!-- Driver.js (Interactive Guided Tour) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -24,6 +28,34 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      position: relative;
+    }
+
+    /* Floating button to restart the tour anytime */
+    .tour-trigger-btn {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #5471c0;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 20px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transition: all 0.2s ease;
+    }
+
+    .tour-trigger-btn:hover {
+      background: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
     }
 
     .app-layout {
@@ -249,17 +281,22 @@
 </head>
 <body>
 
+<!-- Restart tour button -->
+<button type="button" class="tour-trigger-btn" id="startTourBtn" title="How does KnowIt work?">
+  <span>💡</span> Take Tour
+</button>
+
 <div class="app-layout">
 
   <!-- COLUMN 1: Flashcard Creator -->
   <div class="column">
-    <div class="button-row">
+    <div class="button-row" id="tourQuickShortcuts">
       <button type="button" class="premade-btn" onclick="fillText('APUSH Unit 5')">APUSH Unit 5</button>
       <button type="button" class="premade-btn" onclick="fillText('APUSH Unit 4')">APUSH Unit 4</button>
       <button type="button" class="premade-btn" onclick="fillText('Rhetorical Terms')">Rhetorical Terms</button>
     </div>
 
-    <div class="container">
+    <div class="container" id="tourCreateContainer">
       <h2>Create Flashcard Set</h2>
 
       <form id="autoTagForm">
@@ -269,7 +306,7 @@
         <input type="hidden" name="Front" id="frontField">
         <input type="hidden" name="Back" id="backField">
 
-        <button type="submit" class="primary-btn">Make It</button>
+        <button type="submit" id="makeItBtn" class="primary-btn">Make It</button>
       </form>
 
       <div id="status"></div>
@@ -277,7 +314,7 @@
   </div>
 
   <!-- COLUMN 2: Account & Saved Sets -->
-  <div class="column">
+  <div class="column" id="tourAccountCol">
     <div class="container">
       
       <!-- AUTH SECTION -->
@@ -323,6 +360,73 @@
 </div>
 
 <script>
+/* ========================
+   GUIDED ONBOARDING TOUR
+======================== */
+const driver = window.driver.js.driver;
+
+const tourGuide = driver({
+  showProgress: true,
+  animate: true,
+  nextBtnText: 'Next →',
+  prevBtnText: '← Back',
+  doneBtnText: 'Got It!',
+  steps: [
+    {
+      element: '#tourQuickShortcuts',
+      popover: {
+        title: 'Quick Topic Prompts',
+        description: 'Click any of these shortcut buttons to quickly fill in popular study topics!',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
+      element: '#userInput',
+      popover: {
+        title: 'Describe What You Want',
+        description: 'Type any subject or topic here (e.g., "Make 5 cards on cell biology") to generate flashcards automatically.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: '#makeItBtn',
+      popover: {
+        title: 'Create Your Cards',
+        description: 'Hit "Make It" and AI will build your set and generate a direct study link!',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: '#tourAccountCol',
+      popover: {
+        title: 'Save & Manage Sets',
+        description: 'Sign in or register here to save your flashcard IDs so you can revisit them anytime from any device.',
+        side: 'left',
+        align: 'center'
+      }
+    }
+  ]
+});
+
+// Auto-start for first-time visitors only
+window.addEventListener('DOMContentLoaded', () => {
+  const hasSeen = localStorage.getItem('knowit_has_seen_tour');
+  if (!hasSeen) {
+    setTimeout(() => {
+      tourGuide.drive();
+      localStorage.setItem('knowit_has_seen_tour', 'true');
+    }, 400);
+  }
+});
+
+// Click button to start tour manually anytime
+document.getElementById('startTourBtn').addEventListener('click', () => {
+  tourGuide.drive();
+});
+
 /* ========================
    FIREBASE CONFIGURATION
 ======================== */
